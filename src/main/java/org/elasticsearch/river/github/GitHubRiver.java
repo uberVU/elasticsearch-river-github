@@ -1,30 +1,26 @@
 package org.elasticsearch.river.github;
 
-import org.eclipse.egit.github.core.Repository;
-import org.eclipse.egit.github.core.RepositoryId;
-import org.eclipse.egit.github.core.client.EventFormatter;
-import org.eclipse.egit.github.core.client.GitHubClient;
-import org.eclipse.egit.github.core.client.PageIterator;
-import org.eclipse.egit.github.core.event.Event;
-import org.eclipse.egit.github.core.event.EventPayload;
-import org.eclipse.egit.github.core.event.IssuesPayload;
-import org.eclipse.egit.github.core.service.EventService;
-import org.eclipse.egit.github.core.service.RepositoryService;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonStreamParser;
+import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.client.Client;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.river.AbstractRiverComponent;
 import org.elasticsearch.river.River;
-import org.elasticsearch.client.Client;
 import org.elasticsearch.river.RiverName;
 import org.elasticsearch.river.RiverSettings;
 
 import java.io.IOException;
-import java.util.Collection;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URL;
 
 public class GitHubRiver extends AbstractRiverComponent implements River {
 
     private final String indexName;
     private final String typeName;
-    private final GitHubClient github;
     private final Client client;
 
     @SuppressWarnings({"unchecked"})
@@ -38,23 +34,35 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
         typeName = "event";
         this.client = client;
 
-        github = new GitHubClient();
+        // get auth
+        // get time interval
+        // fire off thread with timed checks
 
-        EventService eventService = new EventService();
-        RepositoryId repo = new RepositoryId("rosedu", "wouso");
-        PageIterator<Event> iterator = eventService.pageEvents(repo);
-        while (iterator.hasNext()) {
-            Collection<Event> events = iterator.next();
-            for (Event e: events) {
+        String index = "gabrielfalcao-lettuce";
 
-                EventPayload payload = e.getPayload();
-                if (payload.getClass().getName().contains("IssuesPayload")) {
-                    IssuesPayload p = (IssuesPayload) payload;
-                    logger.info(p.getAction() + " -- #" + p.getIssue().getNumber());
-                }
-                EventFormatter formatter = new EventFormatter();
+        try {
+            URL url = new URL("https://api.github.com/repos/gabrielfalcao/lettuce/events");
+            InputStream input = url.openStream();
+            JsonStreamParser jsp = new JsonStreamParser(new InputStreamReader(input));
+
+            JsonArray array = (JsonArray) jsp.next();
+            for (JsonElement e: array) {
+                JsonObject obj = e.getAsJsonObject();
+                String type = obj.get("type").getAsString();
+                String id = obj.get("id").getAsString();
+                IndexRequest req = new IndexRequest(index)
+                        .type(type.toLowerCase())
+                        .id(id).create(true)
+                        .source(e.toString());
+                client.index(req);
             }
+
+            input.close();
+        } catch (IOException e) {
+            logger.error(e.getMessage());
         }
+
+        logger.info("Done\n\n");
     }
 
     @Override
@@ -65,6 +73,26 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
     @Override
     public void close() {
         //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    public static void main(String[] args) {
+        System.out.println("helo");
+
+        try {
+            URL url = new URL("https://api.github.com/repos/gabrielfalcao/lettuce/events");
+            InputStream input = url.openStream();
+            JsonStreamParser jsp = new JsonStreamParser(new InputStreamReader(input));
+
+            JsonArray array = (JsonArray) jsp.next();
+            for (JsonElement e: array) {
+                JsonObject obj = e.getAsJsonObject();
+                System.out.println(e.toString());
+                String type = obj.get("type").toString();
+            }
+
+            input.close();
+        } catch (IOException e) {}
+
     }
 }
 
