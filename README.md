@@ -30,3 +30,11 @@ The authentication bit is optional.
 ```
 curl -XDELETE localhost:9200/_river/gh_river
 ```
+
+##Indexes and types
+
+The data will be stored in an index of format "%s-%s" % (owner, repo), i.e.
+`gabrielfalcao-lettuce`.
+
+For every API event type, there will be an elasticsearch type of the same name -
+i.e. `ForkEvent`.
