@@ -17,11 +17,11 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
-    <!--<scm>-->
-        <!--<connection>scm:git:git@github.com:elasticsearch/elasticsearch-river-twitter.git</connection>-->
-        <!--<developerConnection>scm:git:git@github.com:elasticsearch/elasticsearch-river-twitter.git</developerConnection>-->
-        <!--<url>http://github.com/elasticsearch/elasticsearch-river-twitter</url>-->
-    <!--</scm>-->
+    <scm>
+        <connection>scm:git:git@github.com:ubervu/elasticsearch-river-github.git</connection>
+        <developerConnection>scm:git:git@github.com:ubervu/elasticsearch-river-github.git</developerConnection>
+        <url>http://github.com/ubervu/elasticsearch-river-github</url>
+    </scm>
 
     <parent>
         <groupId>org.sonatype.oss</groupId>
