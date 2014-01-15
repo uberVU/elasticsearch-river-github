@@ -4,6 +4,8 @@ elasticsearch-river-github
 Elasticsearch river for GitHub events. Gets and stores all the events the GitHub API
 provides for a given repo. Works for private repos as well if you provide authentication.
 
+You can read more about what data is available [here](http://developer.github.com/v3/activity/events/).
+
 ##Adding the river
 
 ```
