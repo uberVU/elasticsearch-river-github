@@ -1,4 +1,4 @@
-package org.elasticsearch.river.github;
+package com.ubervu.river.github;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;

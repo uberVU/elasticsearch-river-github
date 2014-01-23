@@ -1,4 +1,4 @@
-package org.elasticsearch.river.github;
+package com.ubervu.river.github;
 
 import org.elasticsearch.common.inject.AbstractModule;
 import org.elasticsearch.river.River;
