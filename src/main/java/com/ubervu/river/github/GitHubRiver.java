@@ -61,17 +61,21 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
             username = XContentMapValues.nodeStringValue(auth.get("username"), null);
             password = XContentMapValues.nodeStringValue(auth.get("password"), null);
         }
+
+        logger.info("Created GitHub river.");
     }
 
     @Override
     public void start() {
         dataStream = new DataStream();
         dataStream.start();
+        logger.info("Started GitHub river.");
     }
 
     @Override
     public void close() {
         dataStream.setRunning(false);
+        logger.info("Stopped GitHub river.");
     }
 
     private class DataStream extends Thread {
