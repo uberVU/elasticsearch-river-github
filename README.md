@@ -6,6 +6,14 @@ provides for a given repo. Works for private repos as well if you provide authen
 
 You can read more about what data is available [here](http://developer.github.com/v3/activity/events/).
 
+##Easy install
+
+Assuming you have elasticsearch's `bin` folder in your `PATH`:
+
+```
+plugin -i com.ubervu/elasticsearch-river-github/1.0.0
+```
+
 ##Adding the river
 
 ```
