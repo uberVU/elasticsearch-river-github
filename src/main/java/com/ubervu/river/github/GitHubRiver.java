@@ -147,6 +147,11 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
         }
 
         private boolean morePagesAvailable(URLConnection response) {
+            String link = response.getHeaderField("link");
+            if (link == null || link.length() == 0) {
+                return false;
+            }
+
             HashMap<String, String> headerData = parseHeader(response.getHeaderField("link"));
             if (headerData == null) {
                 return false;
