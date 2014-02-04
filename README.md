@@ -1,7 +1,8 @@
 elasticsearch-river-github
 ==========================
 
-Elasticsearch river for GitHub data. Fetches all of the following for a GitHub repo:
+Elasticsearch river for GitHub data. Fetches all of the following for
+a given GitHub repo:
 
 * [events](http://developer.github.com/v3/activity/events/)
 * [issues](http://developer.github.com/v3/issues/#list-issues-for-a-repository)
