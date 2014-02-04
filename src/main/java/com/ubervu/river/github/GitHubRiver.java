@@ -87,19 +87,23 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
             isRunning = true;
         }
 
-        private void indexResponse(URLConnection conn) throws IOException {
+        private void indexResponse(URLConnection conn, String type) throws IOException {
             InputStream input = conn.getInputStream();
             JsonStreamParser jsp = new JsonStreamParser(new InputStreamReader(input));
 
             JsonArray array = (JsonArray) jsp.next();
             for (JsonElement e: array) {
-                indexElement(e);
+                if (type.equals("event")) {
+                    indexEvent(e);
+                } else if (type.equals("issue")) {
+                    indexIssue(e);
+                }
             }
 
             input.close();
         }
 
-        private void indexElement(JsonElement e) {
+        private void indexEvent(JsonElement e) {
             JsonObject obj = e.getAsJsonObject();
             String type = obj.get("type").getAsString();
             String id = obj.get("id").getAsString();
@@ -110,9 +114,20 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
             client.index(req);
         }
 
+        private void indexIssue(JsonElement e) {
+            JsonObject obj = e.getAsJsonObject();
+            String type = "IssueData";
+            String id = obj.get("id").getAsString();
+            IndexRequest req = new IndexRequest(index)
+                    .type(type)
+                    .id(id).create(true)
+                    .source(e.toString());
+            client.index(req);
+        }
+
         private HashMap<String, String> parseHeader(String header) {
             // inspired from https://github.com/uberVU/elasticboard/blob/4ccdfd8c8e772c1dda49a29a7487d14b8d820762/data_processor/github.py#L73
-            Pattern p = Pattern.compile("\\<([a-z/0-9:\\.]+\\?page=([0-9]+))\\>;\\s*rel=\\\"([a-z]+)\\\".*");
+            Pattern p = Pattern.compile("\\<([a-z/0-9:\\.\\?&=]+page=([0-9]+))\\>;\\s*rel=\\\"([a-z]+)\\\".*");
             Matcher m = p.matcher(header);
 
             if (!m.matches()) {
@@ -159,13 +174,35 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
                 URL url = new URL(String.format("https://api.github.com/repos/%s/%s/events", owner, repository));
                 URLConnection response = url.openConnection();
                 addAuthHeader(response);
-                indexResponse(response);
+                indexResponse(response, "event");
 
                 while (morePagesAvailable(response)) {
                     url = new URL(nextPageURL(response));
                     response = url.openConnection();
                     addAuthHeader(response);
-                    indexResponse(response);
+                    indexResponse(response, "event");
+                }
+            } catch (Exception e) {
+                logger.error(e.getMessage());
+            }
+        }
+
+        private void getIssues(boolean closed) {
+            try {
+                String fmt = "https://api.github.com/repos/%s/%s/issues";
+                if (closed) {
+                    fmt = "https://api.github.com/repos/%s/%s/issues?state=closed";
+                }
+                URL url = new URL(String.format(fmt, owner, repository));
+                URLConnection response = url.openConnection();
+                addAuthHeader(response);
+                indexResponse(response, "issue");
+
+                while (morePagesAvailable(response)) {
+                    url = new URL(nextPageURL(response));
+                    response = url.openConnection();
+                    addAuthHeader(response);
+                    indexResponse(response, "issue");
                 }
             } catch (Exception e) {
                 logger.error(e.getMessage());
@@ -176,6 +213,8 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
         public void run() {
             while (isRunning) {
                 getEvents();
+                getIssues(false); // open issues
+                getIssues(true); // closed issues
                 try {
                     Thread.sleep(interval * 1000); // needs milliseconds
                 } catch (InterruptedException e) {}
@@ -187,4 +226,3 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
         }
     }
 }
-
