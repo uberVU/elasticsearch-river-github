@@ -169,40 +169,18 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
             request.setRequestProperty("Authorization", "Basic " + encoded);
         }
 
-        private void getEvents() {
+        private void getData(String fmt, String type) {
             try {
-                URL url = new URL(String.format("https://api.github.com/repos/%s/%s/events", owner, repository));
-                URLConnection response = url.openConnection();
-                addAuthHeader(response);
-                indexResponse(response, "event");
-
-                while (morePagesAvailable(response)) {
-                    url = new URL(nextPageURL(response));
-                    response = url.openConnection();
-                    addAuthHeader(response);
-                    indexResponse(response, "event");
-                }
-            } catch (Exception e) {
-                logger.error(e.getMessage());
-            }
-        }
-
-        private void getIssues(boolean closed) {
-            try {
-                String fmt = "https://api.github.com/repos/%s/%s/issues";
-                if (closed) {
-                    fmt = "https://api.github.com/repos/%s/%s/issues?state=closed";
-                }
                 URL url = new URL(String.format(fmt, owner, repository));
                 URLConnection response = url.openConnection();
                 addAuthHeader(response);
-                indexResponse(response, "issue");
+                indexResponse(response, type);
 
                 while (morePagesAvailable(response)) {
                     url = new URL(nextPageURL(response));
                     response = url.openConnection();
                     addAuthHeader(response);
-                    indexResponse(response, "issue");
+                    indexResponse(response, type);
                 }
             } catch (Exception e) {
                 logger.error(e.getMessage());
@@ -212,9 +190,10 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
         @Override
         public void run() {
             while (isRunning) {
-                getEvents();
-                getIssues(false); // open issues
-                getIssues(true); // closed issues
+                getData("https://api.github.com/repos/%s/%s/events", "event");
+                getData("https://api.github.com/repos/%s/%s/issues", "issue");
+                getData("https://api.github.com/repos/%s/%s/issues?state=closed", "issue");
+
                 try {
                     Thread.sleep(interval * 1000); // needs milliseconds
                 } catch (InterruptedException e) {}
