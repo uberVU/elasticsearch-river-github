@@ -1,18 +1,20 @@
 elasticsearch-river-github
 ==========================
 
-Elasticsearch river for GitHub events and issues. Gets and stores all the events the GitHub API
-provides for a given repo, as well as all of the repository's issues.
-Works for private repos as well if you provide authentication.
+Elasticsearch river for GitHub data. Fetches all of the following for a GitHub repo:
 
-You can read more about what data is available [here](http://developer.github.com/v3/activity/events/).
+* [events](http://developer.github.com/v3/activity/events/)
+* [issues](http://developer.github.com/v3/issues/#list-issues-for-a-repository)
+* [open pull requests](http://developer.github.com/v3/pulls/#list-pull-requests)
+
+Works for private repos as well if you provide authentication.
 
 ##Easy install
 
 Assuming you have elasticsearch's `bin` folder in your `PATH`:
 
 ```
-plugin -i com.ubervu/elasticsearch-river-github/1.1.0
+plugin -i com.ubervu/elasticsearch-river-github/1.2.0
 ```
 
 ##Adding the river
@@ -50,4 +52,5 @@ The data will be stored in an index of format "%s-%s" % (owner, repo), i.e.
 For every API event type, there will be an elasticsearch type of the same name -
 i.e. `ForkEvent`.
 
-Issue data will be stored in the `IssueData` type.
+Issue data will be stored with the `IssueData` type. Pull request data will be stored
+with the `PullRequestData` type.

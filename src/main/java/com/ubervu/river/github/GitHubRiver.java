@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonStreamParser;
+import org.elasticsearch.action.deletebyquery.DeleteByQueryResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.Base64;
@@ -23,6 +24,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 
 public class GitHubRiver extends AbstractRiverComponent implements River {
@@ -96,7 +99,9 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
                 if (type.equals("event")) {
                     indexEvent(e);
                 } else if (type.equals("issue")) {
-                    indexIssue(e);
+                    indexOther(e, "IssueData");
+                } else if (type.equals("pullreq")) {
+                    indexOther(e, "PullRequestData");
                 }
             }
 
@@ -114,9 +119,8 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
             client.index(req);
         }
 
-        private void indexIssue(JsonElement e) {
+        private void indexOther(JsonElement e, String type) {
             JsonObject obj = e.getAsJsonObject();
-            String type = "IssueData";
             String id = obj.get("id").getAsString();
             IndexRequest req = new IndexRequest(index)
                     .type(type)
@@ -193,6 +197,15 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
                 getData("https://api.github.com/repos/%s/%s/events", "event");
                 getData("https://api.github.com/repos/%s/%s/issues", "issue");
                 getData("https://api.github.com/repos/%s/%s/issues?state=closed", "issue");
+
+                // delete pull req data - we are only storing open pull reqs
+                // and when a pull request is closed we have no way of knowing;
+                // this is why we have to delete them and reindex "fresh" ones
+                DeleteByQueryResponse response = client.prepareDeleteByQuery(index)
+                        .setQuery(termQuery("_type", "PullRequestData"))
+                        .execute()
+                        .actionGet();
+                getData("https://api.github.com/repos/%s/%s/pulls", "pullreq");
 
                 try {
                     Thread.sleep(interval * 1000); // needs milliseconds
