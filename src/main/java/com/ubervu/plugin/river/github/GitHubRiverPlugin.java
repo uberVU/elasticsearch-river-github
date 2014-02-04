@@ -21,7 +21,7 @@ public class GitHubRiverPlugin extends AbstractPlugin {
 
     @Override
     public String description() {
-        return "GitHub Twitter Plugin";
+        return "GitHub River Plugin";
     }
 
     public void onModule(RiversModule module) {
