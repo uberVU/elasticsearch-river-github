@@ -53,7 +53,7 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
         Map<String, Object> githubSettings = (Map<String, Object>) settings.settings().get("github");
         owner = XContentMapValues.nodeStringValue(githubSettings.get("owner"), null);
         repository = XContentMapValues.nodeStringValue(githubSettings.get("repository"), null);
-        index = String.format("%s-%s", owner, repository);
+        index = String.format("%s&%s", owner, repository);
         interval = XContentMapValues.nodeIntegerValue(githubSettings.get("interval"), 3600);
 
         // auth (optional)

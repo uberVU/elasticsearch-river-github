@@ -15,7 +15,7 @@ Works for private repos as well if you provide authentication.
 Assuming you have elasticsearch's `bin` folder in your `PATH`:
 
 ```
-plugin -i com.ubervu/elasticsearch-river-github/1.2.1
+plugin -i com.ubervu/elasticsearch-river-github/1.3.0
 ```
 
 ##Adding the river
@@ -47,8 +47,8 @@ curl -XDELETE localhost:9200/_river/gh_river
 
 ##Indexes and types
 
-The data will be stored in an index of format "%s-%s" % (owner, repo), i.e.
-`gabrielfalcao-lettuce`.
+The data will be stored in an index of format "%s&%s" % (owner, repo), i.e.
+`gabrielfalcao&lettuce`.
 
 For every API event type, there will be an elasticsearch type of the same name -
 i.e. `ForkEvent`.
