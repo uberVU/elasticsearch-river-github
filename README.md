@@ -7,6 +7,7 @@ a given GitHub repo:
 * [events](http://developer.github.com/v3/activity/events/)
 * [issues](http://developer.github.com/v3/issues/#list-issues-for-a-repository)
 * [open pull requests](http://developer.github.com/v3/pulls/#list-pull-requests)
+* [open milestones](http://developer.github.com/v3/issues/milestones/)
 
 Works for private repos as well if you provide authentication.
 
