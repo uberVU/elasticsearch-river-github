@@ -4,6 +4,9 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonStreamParser;
+import org.elasticsearch.action.bulk.BulkProcessor;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.deletebyquery.DeleteByQueryResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.Client;
@@ -95,20 +98,38 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
             JsonStreamParser jsp = new JsonStreamParser(new InputStreamReader(input));
 
             JsonArray array = (JsonArray) jsp.next();
+
+            BulkProcessor bp = BulkProcessor.builder(client, new BulkProcessor.Listener() {
+                @Override
+                public void beforeBulk(long executionId, BulkRequest request) {
+                }
+
+                @Override
+                public void afterBulk(long executionId, BulkRequest request, BulkResponse response) {
+                }
+
+                @Override
+                public void afterBulk(long executionId, BulkRequest request, Throwable failure) {
+                }
+            }).build();
+
+            IndexRequest req = null;
             for (JsonElement e: array) {
                 if (type.equals("event")) {
-                    indexEvent(e);
+                    req = indexEvent(e);
                 } else if (type.equals("issue")) {
-                    indexOther(e, "IssueData");
+                    req = indexOther(e, "IssueData");
                 } else if (type.equals("pullreq")) {
-                    indexOther(e, "PullRequestData");
+                    req = indexOther(e, "PullRequestData");
                 }
+                bp.add(req);
             }
+            bp.close();
 
             input.close();
         }
 
-        private void indexEvent(JsonElement e) {
+        private IndexRequest indexEvent(JsonElement e) {
             JsonObject obj = e.getAsJsonObject();
             String type = obj.get("type").getAsString();
             String id = obj.get("id").getAsString();
@@ -116,17 +137,17 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
                     .type(type)
                     .id(id).create(true)
                     .source(e.toString());
-            client.index(req);
+            return req;
         }
 
-        private void indexOther(JsonElement e, String type) {
+        private IndexRequest indexOther(JsonElement e, String type) {
             JsonObject obj = e.getAsJsonObject();
             String id = obj.get("id").getAsString();
             IndexRequest req = new IndexRequest(index)
                     .type(type)
                     .id(id).create(true)
                     .source(e.toString());
-            client.index(req);
+            return req;
         }
 
         private HashMap<String, String> parseHeader(String header) {
