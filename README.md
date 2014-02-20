@@ -15,7 +15,7 @@ Works for private repos as well if you provide authentication.
 Assuming you have elasticsearch's `bin` folder in your `PATH`:
 
 ```
-plugin -i com.ubervu/elasticsearch-river-github/1.3.0
+plugin -i com.ubervu/elasticsearch-river-github/1.4.0
 ```
 
 ##Adding the river
@@ -54,4 +54,5 @@ For every API event type, there will be an elasticsearch type of the same name -
 i.e. `ForkEvent`.
 
 Issue data will be stored with the `IssueData` type. Pull request data will be stored
-with the `PullRequestData` type.
+with the `PullRequestData` type. Milestone data will be stored with the `MilestoneData`
+type.
