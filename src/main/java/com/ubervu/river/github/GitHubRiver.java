@@ -121,6 +121,8 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
                     req = indexOther(e, "IssueData");
                 } else if (type.equals("pullreq")) {
                     req = indexOther(e, "PullRequestData");
+                } else if (type.equals("milestone")) {
+                    req = indexOther(e, "MilestoneData");
                 }
                 bp.add(req);
             }
@@ -223,6 +225,7 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
                 getData("https://api.github.com/repos/%s/%s/events", "event");
                 getData("https://api.github.com/repos/%s/%s/issues", "issue");
                 getData("https://api.github.com/repos/%s/%s/issues?state=closed", "issue");
+                getData("https://api.github.com/repos/%s/%s/milestones", "milestone");
 
                 // delete pull req data - we are only storing open pull reqs
                 // and when a pull request is closed we have no way of knowing;
