@@ -154,7 +154,7 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
 
         private HashMap<String, String> parseHeader(String header) {
             // inspired from https://github.com/uberVU/elasticboard/blob/4ccdfd8c8e772c1dda49a29a7487d14b8d820762/data_processor/github.py#L73
-            Pattern p = Pattern.compile("\\<([a-z/0-9:\\.\\?&=]+page=([0-9]+))\\>;\\s*rel=\\\"([a-z]+)\\\".*");
+            Pattern p = Pattern.compile("\\<([a-z/0-9:\\.\\?_&=]+page=([0-9]+))\\>;\\s*rel=\\\"([a-z]+)\\\".*");
             Matcher m = p.matcher(header);
 
             if (!m.matches()) {
@@ -222,10 +222,10 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
         @Override
         public void run() {
             while (isRunning) {
-                getData("https://api.github.com/repos/%s/%s/events", "event");
-                getData("https://api.github.com/repos/%s/%s/issues", "issue");
-                getData("https://api.github.com/repos/%s/%s/issues?state=closed", "issue");
-                getData("https://api.github.com/repos/%s/%s/milestones", "milestone");
+                getData("https://api.github.com/repos/%s/%s/events?per_page=1000", "event");
+                getData("https://api.github.com/repos/%s/%s/issues?per_page=1000", "issue");
+                getData("https://api.github.com/repos/%s/%s/issues?state=closed&per_page=1000", "issue");
+                getData("https://api.github.com/repos/%s/%s/milestones?per_page=1000", "milestone");
 
                 // delete pull req data - we are only storing open pull reqs
                 // and when a pull request is closed we have no way of knowing;
