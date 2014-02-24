@@ -19,6 +19,9 @@ Assuming you have elasticsearch's `bin` folder in your `PATH`:
 plugin -i com.ubervu/elasticsearch-river-github/1.4.2
 ```
 
+Otherwise, you have to find the directory yourself. It should be
+`/usr/share/elasticsearch/bin` on Ubuntu.
+
 ##Adding the river
 
 ```
@@ -57,3 +60,4 @@ i.e. `ForkEvent`.
 Issue data will be stored with the `IssueData` type. Pull request data will be stored
 with the `PullRequestData` type. Milestone data will be stored with the `MilestoneData`
 type.
+
