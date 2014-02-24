@@ -137,7 +137,7 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
             String id = obj.get("id").getAsString();
             IndexRequest req = new IndexRequest(index)
                     .type(type)
-                    .id(id).create(true)
+                    .id(id).create(false) // we want to overwrite old items
                     .source(e.toString());
             return req;
         }
