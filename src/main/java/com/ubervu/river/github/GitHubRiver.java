@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonStreamParser;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -124,7 +125,7 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
                 } else if (type.equals("milestone")) {
                     req = indexOther(e, "MilestoneData");
                 } else if (type.equals("label")) {
-                    req = indexOther(e, "LabelData", true);
+                    req = indexOther(e, "LabelData");
                 }
                 bp.add(req);
             }
@@ -146,7 +147,16 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
 
         private IndexRequest indexOther(JsonElement e, String type, boolean overwrite) {
             JsonObject obj = e.getAsJsonObject();
-            String id = obj.get("id").getAsString();
+
+            // handle objects that don't have IDs (i.e. labels)
+            // set the ID to the MD5 hash of the string representation
+            String id;
+            if (obj.has("id")) {
+                id = obj.get("id").getAsString();
+            } else {
+                id = DigestUtils.md5Hex(e.toString());
+            }
+
             IndexRequest req = new IndexRequest(index)
                     .type(type)
                     .id(id).create(!overwrite)
@@ -221,7 +231,7 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
                     indexResponse(response, type);
                 }
             } catch (Exception e) {
-                logger.error(e.getMessage());
+                logger.error("Exception in getData", e);
             }
         }
 
@@ -231,7 +241,6 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
                 getData("https://api.github.com/repos/%s/%s/events?per_page=1000", "event");
                 getData("https://api.github.com/repos/%s/%s/issues?per_page=1000", "issue");
                 getData("https://api.github.com/repos/%s/%s/issues?state=closed&per_page=1000", "issue");
-                getData("https://api.github.com/repos/%s/%s/labels?per_page=1000", "label");
 
                 // delete pull req data - we are only storing open pull reqs
                 // and when a pull request is closed we have no way of knowing;
@@ -248,6 +257,15 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
                         .execute()
                         .actionGet();
                 getData("https://api.github.com/repos/%s/%s/milestones?per_page=1000", "milestone");
+
+                // and for labels - they have IDs based on the MD5 of the contents, so
+                // if a property changes, we get a "new" document
+                response = client.prepareDeleteByQuery(index)
+                        .setQuery(termQuery("_type", "LabelData"))
+                        .execute()
+                        .actionGet();
+                getData("https://api.github.com/repos/%s/%s/labels?per_page=1000", "label");
+
 
                 try {
                     Thread.sleep(interval * 1000); // needs milliseconds
