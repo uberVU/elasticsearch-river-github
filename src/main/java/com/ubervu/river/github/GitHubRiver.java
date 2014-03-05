@@ -85,7 +85,7 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
     }
 
     private class DataStream extends Thread {
-        private boolean isRunning;
+        private volatile boolean isRunning;
 
         @Inject
         public DataStream() {
