@@ -8,6 +8,7 @@ a given GitHub repo:
 * [issues](http://developer.github.com/v3/issues/#list-issues-for-a-repository)
 * [open pull requests](http://developer.github.com/v3/pulls/#list-pull-requests)
 * [open milestones](http://developer.github.com/v3/issues/milestones/)
+* [labels](http://developer.github.com/v3/issues/labels/)
 
 Works for private repos as well if you provide authentication.
 
