@@ -231,7 +231,6 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
                 getData("https://api.github.com/repos/%s/%s/events?per_page=1000", "event");
                 getData("https://api.github.com/repos/%s/%s/issues?per_page=1000", "issue");
                 getData("https://api.github.com/repos/%s/%s/issues?state=closed&per_page=1000", "issue");
-                getData("https://api.github.com/repos/%s/%s/milestones?per_page=1000", "milestone");
                 getData("https://api.github.com/repos/%s/%s/labels?per_page=1000", "label");
 
                 // delete pull req data - we are only storing open pull reqs
@@ -242,6 +241,13 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
                         .execute()
                         .actionGet();
                 getData("https://api.github.com/repos/%s/%s/pulls", "pullreq");
+
+                // same for milestones
+                response = client.prepareDeleteByQuery(index)
+                        .setQuery(termQuery("_type", "MilestoneData"))
+                        .execute()
+                        .actionGet();
+                getData("https://api.github.com/repos/%s/%s/milestones?per_page=1000", "milestone");
 
                 try {
                     Thread.sleep(interval * 1000); // needs milliseconds
