@@ -235,6 +235,13 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
             }
         }
 
+        private void deleteByType(String type) {
+            DeleteByQueryResponse response = client.prepareDeleteByQuery(index)
+                    .setQuery(termQuery("_type", type))
+                    .execute()
+                    .actionGet();
+        }
+
         @Override
         public void run() {
             while (isRunning) {
@@ -245,25 +252,16 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
                 // delete pull req data - we are only storing open pull reqs
                 // and when a pull request is closed we have no way of knowing;
                 // this is why we have to delete them and reindex "fresh" ones
-                DeleteByQueryResponse response = client.prepareDeleteByQuery(index)
-                        .setQuery(termQuery("_type", "PullRequestData"))
-                        .execute()
-                        .actionGet();
+                deleteByType("PullRequestData");
                 getData("https://api.github.com/repos/%s/%s/pulls", "pullreq");
 
                 // same for milestones
-                response = client.prepareDeleteByQuery(index)
-                        .setQuery(termQuery("_type", "MilestoneData"))
-                        .execute()
-                        .actionGet();
+                deleteByType("MilestoneData");
                 getData("https://api.github.com/repos/%s/%s/milestones?per_page=1000", "milestone");
 
                 // and for labels - they have IDs based on the MD5 of the contents, so
                 // if a property changes, we get a "new" document
-                response = client.prepareDeleteByQuery(index)
-                        .setQuery(termQuery("_type", "LabelData"))
-                        .execute()
-                        .actionGet();
+                deleteByType("LabelData");
                 getData("https://api.github.com/repos/%s/%s/labels?per_page=1000", "label");
 
 
