@@ -144,14 +144,18 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
             return req;
         }
 
-        private IndexRequest indexOther(JsonElement e, String type) {
+        private IndexRequest indexOther(JsonElement e, String type, boolean overwrite) {
             JsonObject obj = e.getAsJsonObject();
             String id = obj.get("id").getAsString();
             IndexRequest req = new IndexRequest(index)
                     .type(type)
-                    .id(id).create(true)
+                    .id(id).create(!overwrite)
                     .source(e.toString());
             return req;
+        }
+
+        private IndexRequest indexOther(JsonElement e, String type) {
+            return indexOther(e, type, false);
         }
 
         private HashMap<String, String> parseHeader(String header) {
