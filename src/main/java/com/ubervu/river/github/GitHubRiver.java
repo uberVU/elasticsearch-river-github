@@ -118,13 +118,13 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
                 if (type.equals("event")) {
                     req = indexEvent(e);
                 } else if (type.equals("issue")) {
-                    req = indexOther(e, "IssueData");
+                    req = indexOther(e, "IssueData", true);
                 } else if (type.equals("pullreq")) {
                     req = indexOther(e, "PullRequestData");
                 } else if (type.equals("milestone")) {
-                    req = indexOther(e, "MilestoneData");
+                    req = indexOther(e, "MilestoneData", true);
                 } else if (type.equals("label")) {
-                    req = indexOther(e, "LabelData");
+                    req = indexOther(e, "LabelData", true);
                 }
                 bp.add(req);
             }
