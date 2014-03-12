@@ -16,6 +16,7 @@ import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.support.XContentMapValues;
+import org.elasticsearch.indices.IndexAlreadyExistsException;
 import org.elasticsearch.river.AbstractRiverComponent;
 import org.elasticsearch.river.River;
 import org.elasticsearch.river.RiverName;
@@ -83,6 +84,8 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
             Settings indexSettings = ImmutableSettings.settingsBuilder().put("analysis.analyzer.default.tokenizer", "whitespace").build();
             client.admin().indices().prepareCreate(index).setSettings(indexSettings).execute().actionGet();
             logger.info("Created index.");
+        } catch (IndexAlreadyExistsException e) {
+            ;
         } catch (Exception e) {
             logger.error("Exception creating index.", e);
         }
