@@ -13,6 +13,8 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.Base64;
 import org.elasticsearch.common.inject.Inject;
+import org.elasticsearch.common.settings.ImmutableSettings;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.support.XContentMapValues;
 import org.elasticsearch.river.AbstractRiverComponent;
 import org.elasticsearch.river.River;
@@ -74,6 +76,16 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
 
     @Override
     public void start() {
+        // create the index explicitly so we can use the whitespace tokenizer
+        //   because there are usernames like "user-name" and we want those
+        //   to be treated as just one term
+        try {
+            Settings indexSettings = ImmutableSettings.settingsBuilder().put("analysis.analyzer.default.tokenizer", "whitespace").build();
+            client.admin().indices().prepareCreate(index).setSettings(indexSettings).execute().actionGet();
+            logger.info("Created index.");
+        } catch (Exception e) {
+            logger.error("Exception creating index.", e);
+        }
         dataStream = new DataStream();
         dataStream.start();
         logger.info("Started GitHub river.");
