@@ -109,8 +109,14 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
             isRunning = true;
         }
 
-        private void indexResponse(URLConnection conn, String type) throws IOException {
-            InputStream input = conn.getInputStream();
+        private void indexResponse(URLConnection conn, String type) {
+            InputStream input = null;
+            try {
+                input = conn.getInputStream();
+            } catch (IOException e) {
+                logger.info("API rate reached, will try later.");
+                return;
+            }
             JsonStreamParser jsp = new JsonStreamParser(new InputStreamReader(input));
 
             JsonArray array = (JsonArray) jsp.next();
@@ -146,7 +152,9 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
             }
             bp.close();
 
-            input.close();
+            try {
+                input.close();
+            } catch (IOException e) {}
         }
 
         private IndexRequest indexEvent(JsonElement e) {
