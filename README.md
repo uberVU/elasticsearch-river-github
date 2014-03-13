@@ -9,6 +9,7 @@ a given GitHub repo:
 * [open pull requests](http://developer.github.com/v3/pulls/#list-pull-requests)
 * [open milestones](http://developer.github.com/v3/issues/milestones/)
 * [labels](http://developer.github.com/v3/issues/labels/)
+* [collaborators](http://developer.github.com/v3/repos/collaborators/#list)
 
 Works for private repos as well if you provide authentication.
 
@@ -17,7 +18,7 @@ Works for private repos as well if you provide authentication.
 Assuming you have elasticsearch's `bin` folder in your `PATH`:
 
 ```
-plugin -i com.ubervu/elasticsearch-river-github/1.6.2
+plugin -i com.ubervu/elasticsearch-river-github/1.6.3
 ```
 
 Otherwise, you have to find the directory yourself. It should be
