@@ -147,6 +147,8 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
                     req = indexOther(e, "MilestoneData");
                 } else if (type.equals("label")) {
                     req = indexOther(e, "LabelData");
+                } else if (type.equals("collaborator")) {
+                    req = indexOther(e, "CollaboratorData");
                 }
                 bp.add(req);
             }
@@ -281,6 +283,10 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
                 // same for milestones
                 deleteByType("MilestoneData");
                 getData("https://api.github.com/repos/%s/%s/milestones?per_page=1000", "milestone");
+
+                // collaborators
+                deleteByType("CollaboratorData");
+                getData("https://api.github.com/repos/%s/%s/collaborators?per_page=1000", "collaborator");
 
                 // and for labels - they have IDs based on the MD5 of the contents, so
                 // if a property changes, we get a "new" document
