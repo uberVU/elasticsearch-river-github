@@ -26,7 +26,7 @@ Otherwise, you have to find the directory yourself. It should be
 
 ##Adding the river
 
-```
+```bash
 curl -XPUT localhost:9200/_river/gh_river/_meta -d '{
     "type": "github",
     "github": {
@@ -34,8 +34,8 @@ curl -XPUT localhost:9200/_river/gh_river/_meta -d '{
         "repository": "lettuce",
         "interval": 3600,
         "authentication": {
-            "username": "MYUSER",
-            "password": "MYPASSWORD"
+            "username": "MYUSER", # or token
+            "password": "MYPASSWORD" # or x-oauth-basic when using a token
         }
     }
 }'
@@ -43,7 +43,7 @@ curl -XPUT localhost:9200/_river/gh_river/_meta -d '{
 
 Interval is given in seconds and it changes how often the river looks for new data.
 
-The authentication bit is optional.
+The authentication bit is optional. It helps with the API rate limit and when accessing private data. You can use your own GitHub credentials or a token. When using a token, fill in the token as the username and `x-oauth-basic` as the password, as the [docs](http://developer.github.com/v3/auth/#basic-authentication) mention.
 
 ##Deleting the river
 
