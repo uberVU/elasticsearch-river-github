@@ -18,7 +18,7 @@ Works for private repos as well if you provide authentication.
 Assuming you have elasticsearch's `bin` folder in your `PATH`:
 
 ```
-plugin -i com.ubervu/elasticsearch-river-github/1.6.3
+plugin -i com.ubervu/elasticsearch-river-github/1.7.0
 ```
 
 Otherwise, you have to find the directory yourself. It should be
