@@ -118,7 +118,7 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
             try {
                 input = conn.getInputStream();
             } catch (IOException e) {
-                logger.info("API rate reached, will try later.");
+                logger.info("Exception encountered (403 usually is rate limit exceeded): ", e);
                 return;
             }
             JsonStreamParser jsp = new JsonStreamParser(new InputStreamReader(input));
