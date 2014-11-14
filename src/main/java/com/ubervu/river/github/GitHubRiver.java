@@ -74,7 +74,7 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
         }
 
         // endpoint (optional - default to github.com)
-        endpoint = XContentMapValues.nodeStringValue(githubSettings.get("endpoint"), "https://api.github.com/");
+        endpoint = XContentMapValues.nodeStringValue(githubSettings.get("endpoint"), "https://api.github.com");
 
         logger.info("Created GitHub river.");
     }
