@@ -41,6 +41,7 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
     private final String index;
     private final String repository;
     private final String owner;
+    private final String endpoint;
     private final int interval;
     private String password;
     private String username;
@@ -71,6 +72,9 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
             username = XContentMapValues.nodeStringValue(auth.get("username"), null);
             password = XContentMapValues.nodeStringValue(auth.get("password"), null);
         }
+
+        // endpoint (optional - default to github.com)
+        endpoint = XContentMapValues.nodeStringValue(githubSettings.get("endpoint"), "https://api.github.com/");
 
         logger.info("Created GitHub river.");
     }
