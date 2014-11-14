@@ -27,7 +27,7 @@ Otherwise, you have to find the directory yourself. It should be
 ##Adding the river
 
 ```bash
-curl -XPUT localhost:9200/_river/gh_river/_meta -d '{
+curl -XPUT localhost:9200/_river/my_gh_river/_meta -d '{
     "type": "github",
     "github": {
         "owner": "gabrielfalcao",
@@ -49,7 +49,7 @@ The authentication bit is optional. It helps with the API rate limit and when ac
 ##Deleting the river
 
 ```
-curl -XDELETE localhost:9200/_river/gh_river
+curl -XDELETE localhost:9200/_river/my_gh_river
 ```
 
 ##Indexes and types
