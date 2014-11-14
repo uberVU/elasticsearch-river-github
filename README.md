@@ -37,6 +37,7 @@ curl -XPUT localhost:9200/_river/gh_river/_meta -d '{
             "username": "MYUSER", # or token
             "password": "MYPASSWORD" # or x-oauth-basic when using a token
         }
+        "endpoint": "https://api.somegithub.com" # optional, use it only for non github.com
     }
 }'
 ```
