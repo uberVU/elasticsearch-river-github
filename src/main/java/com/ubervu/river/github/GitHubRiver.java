@@ -41,6 +41,7 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
     private final String index;
     private final String repository;
     private final String owner;
+    private final String endpoint;
     private final int interval;
     private String password;
     private String username;
@@ -71,6 +72,9 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
             username = XContentMapValues.nodeStringValue(auth.get("username"), null);
             password = XContentMapValues.nodeStringValue(auth.get("password"), null);
         }
+
+        // endpoint (optional - default to github.com)
+        endpoint = XContentMapValues.nodeStringValue(githubSettings.get("endpoint"), "https://api.github.com");
 
         logger.info("Created GitHub river.");
     }
@@ -114,7 +118,7 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
             try {
                 input = conn.getInputStream();
             } catch (IOException e) {
-                logger.info("API rate reached, will try later.");
+                logger.info("Exception encountered (403 usually is rate limit exceeded): ", e);
                 return;
             }
             JsonStreamParser jsp = new JsonStreamParser(new InputStreamReader(input));
@@ -270,28 +274,28 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
         @Override
         public void run() {
             while (isRunning) {
-                getData("https://api.github.com/repos/%s/%s/events?per_page=1000", "event");
-                getData("https://api.github.com/repos/%s/%s/issues?per_page=1000", "issue");
-                getData("https://api.github.com/repos/%s/%s/issues?state=closed&per_page=1000", "issue");
+                getData(endpoint + "/repos/%s/%s/events?per_page=1000", "event");
+                getData(endpoint + "/repos/%s/%s/issues?per_page=1000", "issue");
+                getData(endpoint + "/repos/%s/%s/issues?state=closed&per_page=1000", "issue");
 
                 // delete pull req data - we are only storing open pull reqs
                 // and when a pull request is closed we have no way of knowing;
                 // this is why we have to delete them and reindex "fresh" ones
                 deleteByType("PullRequestData");
-                getData("https://api.github.com/repos/%s/%s/pulls", "pullreq");
+                getData(endpoint + "/repos/%s/%s/pulls", "pullreq");
 
                 // same for milestones
                 deleteByType("MilestoneData");
-                getData("https://api.github.com/repos/%s/%s/milestones?per_page=1000", "milestone");
+                getData(endpoint + "/repos/%s/%s/milestones?per_page=1000", "milestone");
 
                 // collaborators
                 deleteByType("CollaboratorData");
-                getData("https://api.github.com/repos/%s/%s/collaborators?per_page=1000", "collaborator");
+                getData(endpoint + "/repos/%s/%s/collaborators?per_page=1000", "collaborator");
 
                 // and for labels - they have IDs based on the MD5 of the contents, so
                 // if a property changes, we get a "new" document
                 deleteByType("LabelData");
-                getData("https://api.github.com/repos/%s/%s/labels?per_page=1000", "label");
+                getData(endpoint + "/repos/%s/%s/labels?per_page=1000", "label");
 
 
                 try {
