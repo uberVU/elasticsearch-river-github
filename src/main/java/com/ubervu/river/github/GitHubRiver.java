@@ -5,7 +5,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonStreamParser;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -40,6 +39,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 
@@ -220,7 +220,6 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
             JsonObject obj = e.getAsJsonObject();
             String type = obj.get("type").getAsString();
             String id = obj.get("id").getAsString();
-            logger.debug("Indexing event with id {}", id);
 
             if (isEventIndexed(id)) {
                 return null;
@@ -353,29 +352,25 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
          * @return ISO8601 formatted time of most recent entry, or null on empty or error.
          */
         private String getMostRecentEntry() {
-            FilteredQueryBuilder updatedAtQuery = QueryBuilders
-                    .filteredQuery(QueryBuilders.matchAllQuery(), FilterBuilders.existsFilter("created_at"));
-            FieldSortBuilder updatedAtSort = SortBuilders.fieldSort("_id").order(SortOrder.DESC);
+            long totalEntries = client.prepareCount(index).setQuery(matchAllQuery()).execute().actionGet().getCount();
+            if (totalEntries > 0) {
+                FilteredQueryBuilder updatedAtQuery = QueryBuilders
+                        .filteredQuery(QueryBuilders.matchAllQuery(), FilterBuilders.existsFilter("created_at"));
+                FieldSortBuilder updatedAtSort = SortBuilders.fieldSort("_id").order(SortOrder.DESC);
 
-            final SearchResponse response;
-            try {
-                response = client.prepareSearch(index)
+                SearchResponse response = client.prepareSearch(index)
                         .setQuery(updatedAtQuery)
                         .addSort(updatedAtSort)
                         .setSize(1)
                         .execute()
                         .actionGet();
-            } catch (ElasticsearchException e) {
-                logger.warn("Could not read from index.", e);
-                return null;
-            }
 
-            if (response.getHits().getTotalHits() > 0) {
                 String createdAt = (String) response.getHits().getAt(0).getSource().get("created_at");
-                logger.debug("Most recent event was created at {}, and took {} to get from ES", createdAt, response.getTook());
+                logger.debug("Most recent event was created at {}", createdAt);
                 return createdAt;
             } else {
                 // getData will get all data on a null.
+                logger.info("No existing entries, assuming first run");
                 return null;
             }
         }
@@ -384,13 +379,8 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
         public void run() {
             while (isRunning) {
                 // Must be read before getting new events.
-                final String mostRecentEntry;
-                try {
-                    mostRecentEntry = getMostRecentEntry();
-                } catch (Throwable e) {
-                    logger.error("WTF?", e);
-                    throw new RuntimeException(e);
-                }
+                String mostRecentEntry = getMostRecentEntry();
+
                 logger.debug("Checking for events");
                 if (getData(endpoint + "/repos/%s/%s/events?per_page=1000",
                         "event")) {
