@@ -1,7 +1,7 @@
 elasticsearch-river-github
 ==========================
 
-_THIS IS NOT THE ORIGINAL REPOSITORY_  
+_THIS IS NOT THE ORIGINAL REPOSITORY_
 You probably want https://github.com/uberVU/elasticsearch-river-github for the correct one. This is just a temporary repository for my own fixes.
 
 Elasticsearch river for GitHub data. Fetches all of the following for
