@@ -9,7 +9,6 @@ import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.deletebyquery.DeleteByQueryResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
@@ -18,8 +17,8 @@ import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.support.XContentMapValues;
-import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.FilterBuilders;
+import org.elasticsearch.index.query.FilteredQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.indices.IndexAlreadyExistsException;
 import org.elasticsearch.river.AbstractRiverComponent;
@@ -97,7 +96,7 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
             client.admin().indices().prepareCreate(index).setSettings(indexSettings).execute().actionGet();
             logger.info("Created index.");
         } catch (IndexAlreadyExistsException e) {
-            ;
+            logger.info("Index already created");
         } catch (Exception e) {
             logger.error("Exception creating index.", e);
         }
@@ -122,8 +121,8 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
             isRunning = true;
         }
 
-        private boolean checkETagAndIndexResponse(HttpURLConnection conn, String type) throws IOException{
-            if(eventETag != null) {
+        private boolean checkAndUpdateETag(HttpURLConnection conn) throws IOException {
+            if (eventETag != null) {
                 conn.setRequestProperty("If-None-Match", eventETag);
             }
 
@@ -144,17 +143,16 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
                 eventETag = eTag;
             }
 
-            indexResponse(conn, type);
             return true;
         }
 
-        private void indexResponse(HttpURLConnection conn, String type) {
-            InputStream input = null;
+        private boolean indexResponse(HttpURLConnection conn, String type) {
+            InputStream input;
             try {
                 input = conn.getInputStream();
             } catch (IOException e) {
                 logger.info("API rate reached, will try later.");
-                return;
+                return false;
             }
             JsonStreamParser jsp = new JsonStreamParser(new InputStreamReader(input));
 
@@ -174,10 +172,17 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
                 }
             }).build();
 
+            boolean continueIndexing = true;
+
             IndexRequest req = null;
             for (JsonElement e: array) {
                 if (type.equals("event")) {
                     req = indexEvent(e);
+                    if (req == null) {
+                        continueIndexing = false;
+                        logger.debug("Found existing event, all remaining events has already been indexed");
+                        break;
+                    }
                 } else if (type.equals("issue")) {
                     req = indexOther(e, "IssueData", true);
                 } else if (type.equals("pullreq")) {
@@ -195,13 +200,27 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
 
             try {
                 input.close();
-            } catch (IOException e) {}
+            } catch (IOException e) {
+                logger.warn("Couldn't close connection?", e);
+            }
+
+            return continueIndexing;
+        }
+
+        private boolean isEventIndexed(String id) {
+            return client.prepareGet(index, null, id).get().isExists();
         }
 
         private IndexRequest indexEvent(JsonElement e) {
             JsonObject obj = e.getAsJsonObject();
             String type = obj.get("type").getAsString();
             String id = obj.get("id").getAsString();
+            logger.debug("Indexing event with id {}", id);
+
+            if (isEventIndexed(id)) {
+                return null;
+            }
+
             IndexRequest req = new IndexRequest(index)
                     .type(type)
                     .id(id).create(false) // we want to overwrite old items
@@ -295,19 +314,19 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
                 }
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                 addAuthHeader(connection);
-                if (type.equals("event")){
-                    if(!checkETagAndIndexResponse(connection, type)){
+                if (type.equals("event")) {
+                    boolean modified = checkAndUpdateETag(connection);
+                    if (!modified) {
                         return false;
                     }
-                } else {
-                    indexResponse(connection, type);
                 }
+                boolean continueIndexing = indexResponse(connection, type);
 
-                while (morePagesAvailable(connection)) {
+                while (continueIndexing && morePagesAvailable(connection)) {
                     url = new URL(nextPageURL(connection));
                     connection = (HttpURLConnection) url.openConnection();
                     addAuthHeader(connection);
-                    indexResponse(connection, type);
+                    continueIndexing = indexResponse(connection, type);
                 }
             } catch (Exception e) {
                 logger.error("Exception in getData", e);
@@ -317,7 +336,7 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
         }
 
         private void deleteByType(String type) {
-            DeleteByQueryResponse response = client.prepareDeleteByQuery(index)
+            client.prepareDeleteByQuery(index)
                     .setQuery(termQuery("_type", type))
                     .execute()
                     .actionGet();
@@ -329,8 +348,8 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
          * @return ISO8601 formatted time of most recent entry, or null on empty or error.
          */
         private String getMostRecentEntry() {
-            ConstantScoreQueryBuilder updatedAtQuery = QueryBuilders
-                    .constantScoreQuery(FilterBuilders.existsFilter("created_at"));
+            FilteredQueryBuilder updatedAtQuery = QueryBuilders
+                    .filteredQuery(QueryBuilders.matchAllQuery(), FilterBuilders.existsFilter("created_at"));
             FieldSortBuilder updatedAtSort = SortBuilders.fieldSort("_id").order(SortOrder.DESC);
 
             final SearchResponse response;
@@ -363,15 +382,15 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
                 final String mostRecentEntry;
                 try {
                     mostRecentEntry = getMostRecentEntry();
-                } catch (Throwable e){
+                } catch (Throwable e) {
                     logger.error("WTF?", e);
                     throw new RuntimeException(e);
                 }
                 logger.debug("Checking for events");
                 if (getData("https://api.github.com/repos/%s/%s/events?per_page=1000",
                         "event")) {
-                    logger.debug("New events found, fetching rest of the data");
-                    if(mostRecentEntry != null) {
+                    logger.debug("First run or new events found, fetching rest of the data");
+                    if (mostRecentEntry != null) {
                         getData("https://api.github.com/repos/%s/%s/issues?state=all&per_page=1000&since=%s",
                                 "issue", mostRecentEntry);
                     } else {
@@ -401,7 +420,7 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
                 }
                 try {
                     int waitTime = Math.max(pollInterval, userRequestedInterval) * 1000;
-                    logger.debug("Waiting to fetch new events, for {} ms", waitTime);
+                    logger.debug("Waiting {} ms before polling for new events", waitTime);
                     Thread.sleep(waitTime); // needs milliseconds
                 } catch (InterruptedException e) {
                     logger.info("Wait interrupted, river was probably stopped");
