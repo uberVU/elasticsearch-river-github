@@ -356,7 +356,7 @@ public class GitHubRiver extends AbstractRiverComponent implements River {
             if (totalEntries > 0) {
                 FilteredQueryBuilder updatedAtQuery = QueryBuilders
                         .filteredQuery(QueryBuilders.matchAllQuery(), FilterBuilders.existsFilter("created_at"));
-                FieldSortBuilder updatedAtSort = SortBuilders.fieldSort("_id").order(SortOrder.DESC);
+                FieldSortBuilder updatedAtSort = SortBuilders.fieldSort("created_at").order(SortOrder.DESC);
 
                 SearchResponse response = client.prepareSearch(index)
                         .setQuery(updatedAtQuery)
