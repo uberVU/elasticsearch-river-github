@@ -6,7 +6,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.ubervu</groupId>
     <artifactId>elasticsearch-river-github</artifactId>
-    <version>1.7.0</version>
+    <version>1.7.1</version>
     <packaging>jar</packaging>
     <description>Github River for ElasticSearch</description>
     <inceptionYear>2014</inceptionYear>
